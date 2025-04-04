@@ -9,7 +9,8 @@ using UnityEngine;
 public class PlayerController : MonoBehaviour
 {
     private static readonly int Move = Animator.StringToHash("Move");
-    
+    private static readonly int Speed = Animator.StringToHash("Speed");
+
     [SerializeField] private float rotateSpeed = 100f;
     [SerializeField] private float jumpForce = 5;
     
@@ -19,6 +20,17 @@ public class PlayerController : MonoBehaviour
     private float _gravity = -9.81f;
     private Vector3 _velocity;
     private float _groundDistance;
+    private float _groundedMinDistance = 0.1f;
+    private float _speed = 0f;
+
+    private bool IsGrounded
+    {
+        get
+        {
+            var distance = GetDistanceToGround();
+            return distance < _groundedMinDistance;
+        }
+    }
     
     private void Awake()
     {
@@ -43,7 +55,7 @@ public class PlayerController : MonoBehaviour
         }
         
         HandleMovement();
-        ApplyGravity();
+        CheckRun();
     }
 
     // 사용자 입력 처리 함수
@@ -60,34 +72,25 @@ public class PlayerController : MonoBehaviour
         {
             _animator.SetBool(Move, false);
         }
-
-        // 달리기
-        float speed = 0;
-        if (Input.GetKey(KeyCode.LeftShift))
-        {
-            speed = 1;
-        }
-        _animator.SetFloat("Speed", speed);
+        _animator.SetFloat(Speed, _speed);
 
         Vector3 movement = transform.forward * vertical;
         transform.Rotate(0, horizontal * rotateSpeed * Time.deltaTime, 0);
-        
-        _characterController.Move(movement * Time.deltaTime);
-        
-        _groundDistance = GetDistanceToGround();
-        Debug.Log("Ground Distance: " + _groundDistance);
-        
-        if (Input.GetButtonDown("Jump"))
-        {
-            _velocity.y = Mathf.Sqrt(jumpForce * -2f * _gravity);
-        }
     }
-
-    // 중력 적용 함수
-    private void ApplyGravity()
+    
+    // 달리기 처리
+    private void CheckRun()
     {
-        _velocity.y += _gravity * Time.deltaTime;
-        _characterController.Move(_velocity * Time.deltaTime);
+        if (Input.GetKey(KeyCode.LeftShift))
+        {
+            _speed += Time.deltaTime;
+            _speed = Mathf.Clamp01(_speed);
+        }
+        else
+        {
+            _speed -= Time.deltaTime;
+            _speed = Mathf.Clamp01(_speed);
+        }
     }
     
     // 바닥과 거리를 계산하는 함수
@@ -105,9 +108,30 @@ public class PlayerController : MonoBehaviour
         }
     }
 
+    #region Animator Method
+
+    private void OnAnimatorMove()
+    {
+        Vector3 movePosition;
+        
+        movePosition = _animator.deltaPosition;
+        
+        // 중력 적용
+        _velocity.y += _gravity * Time.deltaTime;
+        movePosition.y = _velocity.y;
+        
+        _characterController.Move(movePosition);
+    }
+
+    #endregion
+
+    #region Debug
+    
     private void OnDrawGizmos()
     {
         Gizmos.color = Color.red;
         Gizmos.DrawLine(transform.position, transform.position + Vector3.down * _groundDistance);
     }
+    
+    #endregion
 }
