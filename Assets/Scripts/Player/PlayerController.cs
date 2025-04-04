@@ -61,6 +61,14 @@ public class PlayerController : MonoBehaviour
             _animator.SetBool(Move, false);
         }
 
+        // 달리기
+        float speed = 0;
+        if (Input.GetKey(KeyCode.LeftShift))
+        {
+            speed = 1;
+        }
+        _animator.SetFloat("Speed", speed);
+
         Vector3 movement = transform.forward * vertical;
         transform.Rotate(0, horizontal * rotateSpeed * Time.deltaTime, 0);
         

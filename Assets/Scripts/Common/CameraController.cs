@@ -26,12 +26,8 @@ public class CameraController : MonoBehaviour
     {
         float mouseX = Input.GetAxis("Mouse X");
         float mouseY = Input.GetAxis("Mouse Y");
-        
-        Debug.Log($"## X: {mouseX} Y: {mouseY}");
-        
         _azimuthAngle += mouseX * rotationSpeed * Time.deltaTime;
         _polarAngle -= mouseY * rotationSpeed * Time.deltaTime;
-        
         _polarAngle = Mathf.Clamp(_polarAngle, 10f, 45f);
         
         var cartesianPosition = GetCameraPosition(distance, _polarAngle, _azimuthAngle);
