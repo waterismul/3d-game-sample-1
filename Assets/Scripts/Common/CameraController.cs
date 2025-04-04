@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -10,7 +11,16 @@ public class CameraController : MonoBehaviour
     [SerializeField] private float distance = 5f;
     
     private float _azimuthAngle;
-    private float _polarAngle;
+    private float _polarAngle = 45f;
+
+    private void Start()
+    {
+        var cartesianPosition = GetCameraPosition(distance, _polarAngle, _azimuthAngle);
+        var cameraPosition = target.position - cartesianPosition;
+        
+        transform.position = cameraPosition;
+        transform.LookAt(target);
+    }
 
     private void LateUpdate()
     {
@@ -19,22 +29,24 @@ public class CameraController : MonoBehaviour
         
         Debug.Log($"## X: {mouseX} Y: {mouseY}");
         
-        _polarAngle += mouseY * rotationSpeed * Time.deltaTime;
         _azimuthAngle += mouseX * rotationSpeed * Time.deltaTime;
+        _polarAngle -= mouseY * rotationSpeed * Time.deltaTime;
         
-        var cartesianPosition = GetCameraPosition(distance, _azimuthAngle, _polarAngle);
+        _polarAngle = Mathf.Clamp(_polarAngle, 10f, 45f);
+        
+        var cartesianPosition = GetCameraPosition(distance, _polarAngle, _azimuthAngle);
         var cameraPosition = target.position - cartesianPosition;
         
         transform.position = cameraPosition;
         transform.LookAt(target);
     }
 
-    Vector3 GetCameraPosition(float r, float azimuthAngle, float polarAngle)
+    Vector3 GetCameraPosition(float r, float polarAngle, float azimuthAngle)
     {
-        float b = r * Mathf.Cos(azimuthAngle * Mathf.Deg2Rad);
-        float z = b * Mathf.Cos(polarAngle * Mathf.Deg2Rad);
-        float y = r * Mathf.Sin(azimuthAngle * Mathf.Deg2Rad);
-        float x = b * Mathf.Sin(polarAngle * Mathf.Deg2Rad);
+        float b = r * Mathf.Cos(polarAngle * Mathf.Deg2Rad);
+        float z = b * Mathf.Cos(azimuthAngle * Mathf.Deg2Rad);
+        float y = r * Mathf.Sin(polarAngle * Mathf.Deg2Rad) * -1;
+        float x = b * Mathf.Sin(azimuthAngle * Mathf.Deg2Rad);
         
         return new Vector3(x, y, z);
     }
