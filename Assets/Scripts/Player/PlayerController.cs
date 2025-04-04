@@ -5,20 +5,25 @@ using TMPro;
 using UnityEngine;
 
 [RequireComponent(typeof(CharacterController))]
+[RequireComponent(typeof(Animator))]
 public class PlayerController : MonoBehaviour
 {
+    private static readonly int Move = Animator.StringToHash("Move");
+    
     [SerializeField] private float rotateSpeed = 100f;
     [SerializeField] private float jumpForce = 5;
     
     private CharacterController _characterController;
-    private float _gravity = -9.81f;
+    private Animator _animator;
     
+    private float _gravity = -9.81f;
     private Vector3 _velocity;
     private float _groundDistance;
     
-    private void Start()
+    private void Awake()
     {
-        _characterController = GetComponent<CharacterController>();    
+        _characterController = GetComponent<CharacterController>();
+        _animator = GetComponent<Animator>();
     }
 
     private void Update()
@@ -32,6 +37,15 @@ public class PlayerController : MonoBehaviour
     {
         float horizontal = Input.GetAxis("Horizontal");
         float vertical = Input.GetAxis("Vertical");
+
+        if (vertical > 0)
+        {
+            _animator.SetBool(Move, true);
+        }
+        else
+        {
+            _animator.SetBool(Move, false);
+        }
 
         Vector3 movement = transform.forward * vertical;
         transform.Rotate(0, horizontal * rotateSpeed * Time.deltaTime, 0);
