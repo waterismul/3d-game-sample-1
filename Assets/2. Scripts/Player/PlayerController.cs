@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+public enum PlayerState{None,Idle, Move, Jump, Attack, Hit, Dead}
 [RequireComponent(typeof(CharacterController))]
 [RequireComponent(typeof(Animator))]
 public class PlayerController : MonoBehaviour
@@ -15,10 +16,22 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private LayerMask groundLayer;
     [SerializeField] private float maxGroundCheckDistance = 10f;
 
-    [Header("Attach Points")] [SerializeField]
-    private Transform leftHandTrasnform;
-
+    [Header("Attach Points")]
+    [SerializeField] private Transform leftHandTrasnform;
     [SerializeField] private Transform headTransform;
+    
+    //----
+    //상태관련
+    private PlayerStateIdle _playerStateIdle;
+    private PlayerStateMove _playerStateMove;
+    private PlayerStateJump _playerStateJump;
+    private PlayerStateAttack _playerStateAttack;
+    private PlayerStateHit _playerStateHit;
+    private PlayerStateDead _playerStateDead;
+
+    public PlayerState CurrentState { get; private set; }
+    private Dictionary<PlayerState, IPlayerState> _playerStates;//PlayerState : enum값
+    
 
     //----
     //외부 접근 가능 변수
@@ -40,6 +53,50 @@ public class PlayerController : MonoBehaviour
     {
         Animator = GetComponent<Animator>();
         _characterController = GetComponent<CharacterController>();
+    }
+
+    private void Start()
+    {
+        //상태 초기화
+        _playerStateIdle = new PlayerStateIdle();
+        _playerStateMove = new PlayerStateMove();
+        _playerStateJump = new PlayerStateJump();
+        _playerStateDead = new PlayerStateDead();
+        _playerStateHit = new PlayerStateHit();
+        _playerStateAttack = new PlayerStateAttack();
+
+        _playerStates = new Dictionary<PlayerState, IPlayerState>
+        {
+            { PlayerState.Idle, _playerStateIdle },
+            { PlayerState.Move, _playerStateMove },
+            { PlayerState.Jump, _playerStateJump },
+            { PlayerState.Attack, _playerStateAttack },
+            { PlayerState.Hit, _playerStateHit },
+            { PlayerState.Dead, _playerStateDead }
+        };
+        SetState(PlayerState.Idle);
+        
+        //체력초기화
+        _currentHealth = maxHealth;
+    }
+
+    private void Update()
+    {
+        if (CurrentState != PlayerState.None)
+        {
+            _playerStates[CurrentState].Update();
+        }
+    }
+
+    public void SetState(PlayerState state)
+    {
+        if (CurrentState != PlayerState.None)
+        {
+            _playerStates[CurrentState].Exit();
+        }
+        CurrentState = state;
+        _playerStates[CurrentState].Enter(this);
+        
     }
 
     #region 애니메이터 관련

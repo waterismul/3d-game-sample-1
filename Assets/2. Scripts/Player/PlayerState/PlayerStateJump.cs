@@ -1,13 +1,13 @@
 ﻿using UnityEngine;
 
-public class PlayerStateIdle : MonoBehaviour, IPlayerState
+public class PlayerStateJump : MonoBehaviour, IPlayerState
 {
     private PlayerController _playerController;
     
     public void Enter(PlayerController playerController)
     {
         _playerController = playerController;
-        _playerController.Animator.SetBool("Idle", true);
+        _playerController.Animator.SetBool("Jump", true);
     }
 
     public void Update()
@@ -17,7 +17,8 @@ public class PlayerStateIdle : MonoBehaviour, IPlayerState
 
     public void Exit()
     {
-        _playerController.Animator.SetBool("Idle", false);
+        _playerController.Animator.SetBool("Jump", false);
         _playerController = null;
+        
     }
 }
