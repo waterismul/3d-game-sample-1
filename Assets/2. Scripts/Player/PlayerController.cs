@@ -1,104 +1,89 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using TMPro;
 using UnityEngine;
 
 [RequireComponent(typeof(CharacterController))]
 [RequireComponent(typeof(Animator))]
 public class PlayerController : MonoBehaviour
 {
-    private static readonly int Move = Animator.StringToHash("Move");
-    private static readonly int Speed = Animator.StringToHash("Speed");
+    [Header("Player")] [SerializeField] private int maxHealth = 100;
+    [SerializeField] private int attackPower = 10;
 
-    [SerializeField] private float rotateSpeed = 100f;
-    [SerializeField] private float jumpForce = 5;
-    
-    private CharacterController _characterController;
-    private Animator _animator;
-    
-    private float _gravity = -9.81f;
-    private Vector3 _velocity;
-    private float _groundDistance;
-    private float _groundedMinDistance = 0.1f;
-    private float _speed = 0f;
+    [Header("Movement")] [SerializeField] private float jumpSpeed = 2f;
+    [SerializeField] private float rotationSpedd = 100f;
+    [SerializeField] private LayerMask groundLayer;
+    [SerializeField] private float maxGroundCheckDistance = 10f;
 
-    private bool IsGrounded
+    [Header("Attach Points")] [SerializeField]
+    private Transform leftHandTrasnform;
+
+    [SerializeField] private Transform headTransform;
+
+    //----
+    //외부 접근 가능 변수
+    public Animator Animator { get; private set; }
+
+    public bool IsGrounded
     {
-        get
-        {
-            var distance = GetDistanceToGround();
-            return distance < _groundedMinDistance;
-        }
+        get { return GetDistanceToGround() < 0.2f; }
     }
-    
+
+    //----
+    //내부에서만 사용되는 변수
+    private CharacterController _characterController;
+    private const float _gravity = -9.81f;
+    private Vector3 _velocity = Vector3.zero;
+    private int _currentHealth = 0;
+
     private void Awake()
     {
+        Animator = GetComponent<Animator>();
         _characterController = GetComponent<CharacterController>();
-        _animator = GetComponent<Animator>();
     }
 
-    private void Start()
-    {
-        // 커서 설정
-        Cursor.visible = false;
-        Cursor.lockState = CursorLockMode.Locked;
-    }
+    #region 애니메이터 관련
 
-    private void Update()
+    private void OnAnimatorMove()
     {
-        // 커서 락 해제
-        if (Input.GetKeyDown(KeyCode.Escape))
+        Vector3 movePosition;
+
+        if (IsGrounded)
         {
-            Cursor.visible = true;
-            Cursor.lockState = CursorLockMode.None;
+            movePosition = Animator.deltaPosition;
         }
+        else
+        {
+            movePosition = _characterController.velocity * Time.deltaTime;
+        }
+
+        // 중력 적용
+        _velocity.y += _gravity * Time.deltaTime;
+        movePosition.y = _velocity.y * Time.deltaTime;
+
+        _characterController.Move(movePosition);
+    }
+
+    public void MeleeAttackStart()
+    {
         
-        HandleMovement();
-        CheckRun();
     }
 
-    // 사용자 입력 처리 함수
-    private void HandleMovement()
+    public void MeleeAttackEnd()
     {
-        float horizontal = Input.GetAxis("Horizontal");
-        float vertical = Input.GetAxis("Vertical");
-
-        if (vertical > 0)
-        {
-            _animator.SetBool(Move, true);
-        }
-        else
-        {
-            _animator.SetBool(Move, false);
-        }
-        _animator.SetFloat(Speed, _speed);
-
-        Vector3 movement = transform.forward * vertical;
-        transform.Rotate(0, horizontal * rotateSpeed * Time.deltaTime, 0);
+        
     }
-    
-    // 달리기 처리
-    private void CheckRun()
-    {
-        if (Input.GetKey(KeyCode.LeftShift))
-        {
-            _speed += Time.deltaTime;
-            _speed = Mathf.Clamp01(_speed);
-        }
-        else
-        {
-            _speed -= Time.deltaTime;
-            _speed = Mathf.Clamp01(_speed);
-        }
-    }
-    
+
+    #endregion
+
+    #region 계산 관련
+
     // 바닥과 거리를 계산하는 함수
     private float GetDistanceToGround()
     {
         float maxDistance = 10f;
-        if (Physics.Raycast(transform.position, 
-                Vector3.down, out RaycastHit hit, maxDistance))
+        if (Physics.Raycast(transform.position,
+                Vector3.down, out RaycastHit hit, maxDistance, groundLayer))
         {
             return hit.distance;
         }
@@ -108,30 +93,5 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    #region Animator Method
-
-    private void OnAnimatorMove()
-    {
-        Vector3 movePosition;
-        
-        movePosition = _animator.deltaPosition;
-        
-        // 중력 적용
-        _velocity.y += _gravity * Time.deltaTime;
-        movePosition.y = _velocity.y;
-        
-        _characterController.Move(movePosition);
-    }
-
-    #endregion
-
-    #region Debug
-    
-    private void OnDrawGizmos()
-    {
-        Gizmos.color = Color.red;
-        Gizmos.DrawLine(transform.position, transform.position + Vector3.down * _groundDistance);
-    }
-    
     #endregion
 }
