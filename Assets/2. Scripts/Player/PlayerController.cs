@@ -99,6 +99,37 @@ public class PlayerController : MonoBehaviour
         
     }
 
+    #region 동작 관련
+
+    public void Rotate(float x, float z)//상태에 따라 가져올 수 있게끔 public
+    {
+        //카메라 설정
+        var cameraTransform = Camera.main.transform;
+        var cameraForward = cameraTransform.forward;
+        var cameraRight = cameraTransform.right;
+        
+        //y값을 0으로 설정해서 수평 방향만 고려
+        cameraForward.y = 0;
+        cameraRight.y = 0;
+        
+        //입력 방향에 따라 카메라 기준으로 이동 방향 계산
+        var moveDirection = cameraForward * z + cameraRight * x;
+        
+        //이동 방향이 있을 경우에만 회전
+        if (moveDirection != Vector3.zero)
+        {
+            moveDirection.Normalize();
+            transform.rotation = Quaternion.LookRotation(moveDirection);
+        }
+    }
+
+    #endregion
+
+    public void Jump()
+    {
+        _velocity.y = Mathf.Sqrt(jumpSpeed*-2f*_gravity);
+    }
+
     #region 애니메이터 관련
 
     private void OnAnimatorMove()
@@ -136,7 +167,7 @@ public class PlayerController : MonoBehaviour
     #region 계산 관련
 
     // 바닥과 거리를 계산하는 함수
-    private float GetDistanceToGround()
+    public float GetDistanceToGround()
     {
         float maxDistance = 10f;
         if (Physics.Raycast(transform.position,
