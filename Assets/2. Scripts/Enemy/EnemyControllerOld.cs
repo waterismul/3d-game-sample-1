@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.AI;
+using Random = UnityEngine.Random;
 
 public enum EnemyState{Idle, Patrol, Trace, Attack, Hit, Dead}//Patrol: 정찰, Trace: 추적 
 
@@ -15,39 +16,124 @@ public class EnemyControllerOld : MonoBehaviour
     [Header("Enemy")] 
     [SerializeField] private int attackPower = 1;
     [SerializeField] private int maxHealth = 100;
-    
-    public Animator EnemyAnimator { get; private set; }
 
-    private int _currentHealth;
-    private EnemyState _currentState;
+    [Header("AI")] 
+    [SerializeField] private LayerMask targetLayer;
+    [SerializeField] private float detectCircleRadius = 10f;// 적감지 반경
+    [SerializeField] private float maxPatrolWaitTime = 3f;
+    [SerializeField] private float detectSightAngle = 30f;//시야각
     
+    private Animator _enemyAnimator;
     private NavMeshAgent _navMeshAgent;
+
+    //적의 체력
+    private int _currentHealth;
+    
+    //적의 상태
+    private EnemyState _currentState;
+    public EnemyState CurrentState => _currentState;
+
+    //플레이어의 추적 위치를 업데이트 하는 코루틴
+    private Coroutine _updateDestinationCoroutine;
+
+    //플레이어의 거리를 비교하기 위한 변수
+    private float _detectCircleRadiusSqr;
+    
+    //누적 패트롤 대기시간
+    private float _patrolWaitTime;
+    
+    //----
+    //AI
+    private Transform _playerTransform; //감지된 플레이어 위치
+    
+    
 
     private void Awake()
     {
-        EnemyAnimator = GetComponent<Animator>();
+        _enemyAnimator = GetComponent<Animator>();
         _navMeshAgent = GetComponent<NavMeshAgent>();
         _navMeshAgent.updatePosition = false;//직접 움직이지 못하게
-        _navMeshAgent.updateRotation = false;//직접 회전하지 못하게
+        _navMeshAgent.updateRotation = true;//방향은 따라가게
     }
 
     private void Start()
     {
         _currentHealth = maxHealth;
+        _detectCircleRadiusSqr = detectCircleRadius * detectCircleRadius; //제곱하기
+        _patrolWaitTime = 0f;
         
         SetState(EnemyState.Idle);
     }
 
     private void Update()
     {
+        //Update
         switch (_currentState)
         {
             case EnemyState.Idle:
+            {
+                //1. 플레이어 감지
+                var detectPlayer = DetectPlayerInCircle();
+                if (detectPlayer)
+                {
+                    _playerTransform = detectPlayer;
+                    SetState(EnemyState.Trace);
+                    break;
+                }
+                //2. 정찰 여부 판단
+                if (_patrolWaitTime > maxPatrolWaitTime && Random.Range(0,100)<30)
+                {
+                    //정찰하기로 결정
+                    SetState(EnemyState.Patrol);
+                    break;
+                }
+                _patrolWaitTime += Time.deltaTime;
                 break;
+            }
+
             case EnemyState.Patrol:
+            {
+                //1. 플레이어 감지
+                var detectPlayer = DetectPlayerInCircle();
+                if (detectPlayer)
+                {
+                    _playerTransform = detectPlayer;
+                    SetState(EnemyState.Trace);
+                    break;
+                }
+                
+                //패트롤 위치에 도착하면 Idle 상태로 전환
+                if (!_navMeshAgent.pathPending && _navMeshAgent.remainingDistance < 0.1f)
+                {
+                    SetState(EnemyState.Idle);
+                    break;
+                }
                 break;
+            }
+                
             case EnemyState.Trace:
+            {
+                //플레이어와 거리 계산
+                var playerDistanceSqr = (_playerTransform.position - transform.position).sqrMagnitude;
+                
+                //트레이스 중 시야에 플레이어가 들어오면 속도 증가
+                if (DetectPlayerInSight(_playerTransform))
+                {
+                    _enemyAnimator.SetFloat("Speed", 1f);
+                }
+                else
+                {
+                    _enemyAnimator.SetFloat("Speed", 0f);
+                }
+                
+                //일정 거리 이상으로 플레이어가 멀어지면 Idle로 전환
+                if (playerDistanceSqr > _detectCircleRadiusSqr)//범위를 벗어났다면
+                {
+                    SetState(EnemyState.Idle);
+                }
                 break;
+            }
+                
             case EnemyState.Attack:
                 break;
             case EnemyState.Hit:
@@ -59,14 +145,56 @@ public class EnemyControllerOld : MonoBehaviour
 
     public void SetState(EnemyState newState)
     {
+        //Enter
         switch (newState)
         {
             case EnemyState.Idle:
+            {
+                //찾아야할 플레이어 정보 초기화
+                _playerTransform = null;
+                
+                //패트롤 대기 시간 초기화
+                _patrolWaitTime = 0f;
+                
+                //Idle 상태에서는 Agent의 이동을 중지
+                _navMeshAgent.isStopped = true;//적 이동 중지
+
+                //Idle 애니메이션 재생
+                _enemyAnimator.SetBool("Idle", true);
+                
+                
                 break;
+            }
+
             case EnemyState.Patrol:
+            {
+                //랜덤으로 정찰 위치를 구하고, 있으면 해당 위치로 이동, 없으면 다시 Idle 상태로 전환
+                var patrolPoint = FindRandomPatrolPoint();
+                if (patrolPoint == transform.position)//정찰할 곳을 못찾았다면
+                {
+                    SetState(EnemyState.Idle);
+                    break;
+                }
+
+                _navMeshAgent.isStopped = false;
+                _navMeshAgent.SetDestination(patrolPoint);
+                
+                //Patrol 애니메이션 재생
+                _enemyAnimator.SetBool("Patrol", true);
                 break;
+            }
+
             case EnemyState.Trace:
+            {
+                //감지된 플레이어를 향해 이동
+                _navMeshAgent.isStopped = false;
+                _updateDestinationCoroutine = StartCoroutine(UpdateDestination());
+                
+                //Trace 애니메이션 재생
+                _enemyAnimator.SetBool("Trace", true);
                 break;
+            }
+                
             case EnemyState.Attack:
                 break;
             case EnemyState.Hit:
@@ -74,15 +202,39 @@ public class EnemyControllerOld : MonoBehaviour
             case EnemyState.Dead:
                 break;
         }
+        
+        
 
+        //Exit
         switch (_currentState)
         {
             case EnemyState.Idle:
+            {
+                //Idle 애니메이션 끄기
+                _enemyAnimator.SetBool("Idle", false);
                 break;
+            }
+
             case EnemyState.Patrol:
+            {
+                //Patrol 애니메이션 끄기
+                _enemyAnimator.SetBool("Patrol", false);
                 break;
+            }
+
             case EnemyState.Trace:
+            {
+                //플레이어 위치 갱신하는 코루틴 중지
+                if (_updateDestinationCoroutine != null)
+                {
+                    StopCoroutine(_updateDestinationCoroutine);
+                    _updateDestinationCoroutine = null;
+                }
+                //Trace 애니메이션 끄기
+                _enemyAnimator.SetBool("Trace", false);
                 break;
+            }
+                
             case EnemyState.Attack:
                 break;
             case EnemyState.Hit:
@@ -94,11 +246,82 @@ public class EnemyControllerOld : MonoBehaviour
         _currentState = newState;
     }
 
+    #region 적 감지
+
+    private Vector3 FindRandomPatrolPoint()
+    {
+        Vector3 randomDirection = Random.insideUnitSphere * detectCircleRadius;
+        randomDirection += transform.position;
+        
+        NavMeshHit hit;
+        if (NavMesh.SamplePosition(randomDirection, out hit, detectCircleRadius, NavMesh.AllAreas))
+        {
+            return hit.position;
+        }
+        else//못찾았다면
+        {
+            return transform.position;
+        }
+    }
+
+    IEnumerator UpdateDestination()
+    {
+        while (_playerTransform)
+        {
+            _navMeshAgent.SetDestination(_playerTransform.position);
+            yield return new WaitForSeconds(0.5f);
+        }
+    }
+
+    //일정 반경에 플레이어가 진입하면 적이 감지했다고 판단
+    private Transform DetectPlayerInCircle()
+    {
+        var hitColliders = Physics.OverlapSphere(transform.position, detectCircleRadius, targetLayer);//저 반경안에 있는 것들을 hitColliders에 저장
+        if (hitColliders.Length > 0)//적을 한개만 찾으면 바로 위치 리턴
+        {
+            return hitColliders[0].transform;
+        }
+        else
+        {
+            return null;
+        }
+        
+    }
+    
+    //일정 반경에 플레이어가 진입하면 시야에 들어왔다고 판단하는 함수
+    private bool DetectPlayerInSight(Transform playerTransform)
+    {
+        if (playerTransform == null)
+        {
+            return false;
+        }
+        
+         //방법1
+         // Vector3 direction = playerTransform.position - transform.position;
+         // float angle = Vector3.Angle(direction, transform.forward);
+
+         //방법2
+         var cosTheta = Vector3.Dot(transform.forward, (playerTransform.position - transform.position).normalized);
+         var angle = Mathf.Acos(cosTheta)* Mathf.Rad2Deg;
+
+         if (angle < detectSightAngle)
+         {
+             return true;
+         }
+         else
+         {
+             return false;
+         }
+
+    }
+
+    #endregion
+
     #region 동작처리
 
     private void OnAnimatorMove()
     {
-        var position = EnemyAnimator.rootPosition;
+        var position = _enemyAnimator.rootPosition;
         
         position.y = _navMeshAgent.nextPosition.y;
         
@@ -112,7 +335,17 @@ public class EnemyControllerOld : MonoBehaviour
 
     private void OnDrawGizmos()
     {
+        //Circle 감지 범위
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawWireSphere(transform.position, detectCircleRadius);
         
+        //시야각
+        Gizmos.color = Color.red;
+        Vector3 rightDirection = Quaternion.Euler(0, detectSightAngle, 0) * transform.forward;
+        Vector3 leftDirection = Quaternion.Euler(0, -detectSightAngle, 0) * transform.forward;
+        Gizmos.DrawRay(transform.position, rightDirection*detectCircleRadius);
+        Gizmos.DrawRay(transform.position, leftDirection*detectCircleRadius);
+        Gizmos.DrawRay(transform.position, transform.forward *detectCircleRadius);
     }
 
     #endregion
