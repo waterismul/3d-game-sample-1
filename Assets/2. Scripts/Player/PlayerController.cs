@@ -12,7 +12,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private int attackPower = 10;
 
     [Header("Movement")] [SerializeField] private float jumpSpeed = 2f;
-    [SerializeField] private float rotationSpedd = 100f;
+    [SerializeField] private float rotationSpeed = 100f;
     [SerializeField] private LayerMask groundLayer;
     [SerializeField] private float maxGroundCheckDistance = 10f;
 
@@ -22,7 +22,7 @@ public class PlayerController : MonoBehaviour
     
     //----
     //상태관련
-    private PlayerStateIdle _playerStateIdle;
+    private PlayerStateIdle _playerStateIdle;   
     private PlayerStateMove _playerStateMove;
     private PlayerStateJump _playerStateJump;
     private PlayerStateAttack _playerStateAttack;
