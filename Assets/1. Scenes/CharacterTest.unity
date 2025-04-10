@@ -236,7 +236,7 @@ MonoBehaviour:
   maxHealth: 100
   attackPower: 10
   jumpSpeed: 2
-  rotationSpedd: 100
+  rotationSpeed: 100
   groundLayer:
     serializedVersion: 2
     m_Bits: 8
@@ -674,10 +674,10 @@ PrefabInstance:
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 3074657719725428346, guid: cbbcf6e267045b043ae0a5d0debc8280, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 1952370708}
+      addedObject: {fileID: 1952370709}
     - targetCorrespondingSourceObject: {fileID: 3074657719725428346, guid: cbbcf6e267045b043ae0a5d0debc8280, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 1952370709}
+      addedObject: {fileID: 1952370710}
   m_SourcePrefab: {fileID: 100100000, guid: cbbcf6e267045b043ae0a5d0debc8280, type: 3}
 --- !u!4 &947169167 stripped
 Transform:
@@ -3331,26 +3331,6 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 3074657719725428346, guid: cbbcf6e267045b043ae0a5d0debc8280, type: 3}
   m_PrefabInstance: {fileID: 880690131}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &1952370708
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1952370705}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c66a6e97bc1658e479d9f910aa817c0c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  attackPower: 1
-  maxHealth: 100
-  targetLayer:
-    serializedVersion: 2
-    m_Bits: 64
-  detectCircleRadius: 5
-  maxPatrolWaitTime: 3
-  detectSightAngle: 30
 --- !u!195 &1952370709
 NavMeshAgent:
   m_ObjectHideFlags: 0
@@ -3373,6 +3353,27 @@ NavMeshAgent:
   m_BaseOffset: 0
   m_WalkableMask: 4294967295
   m_ObstacleAvoidanceType: 4
+--- !u!114 &1952370710
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1952370705}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a4097e383d85538449123751baf4e328, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  maxHealth: 100
+  attackPower: 10
+  defensePower: 5
+  detectCircleRadius: 10
+  targetLayerMask:
+    serializedVersion: 2
+    m_Bits: 64
+  maxDetectSightAngle: 30
+  maxPatrolWaitTime: 3
 --- !u!1001 &8679121560526203966
 PrefabInstance:
   m_ObjectHideFlags: 0
