@@ -6,7 +6,7 @@ using UnityEngine;
 public enum PlayerState{None,Idle, Move, Jump, Attack, Hit, Dead}
 [RequireComponent(typeof(CharacterController))]
 [RequireComponent(typeof(Animator))]
-public class PlayerController : MonoBehaviour
+public class PlayerController : MonoBehaviour, IObserver<GameObject>
 {
     [Header("Player")] [SerializeField] private int maxHealth = 100;
     [SerializeField] private int attackPower = 10;
@@ -182,4 +182,25 @@ public class PlayerController : MonoBehaviour
     }
 
     #endregion
+
+
+    #region 옵저버 - 무기관련
+
+    public void OnNext(GameObject value)
+    {
+        
+    }
+
+    public void OnError(Exception error)
+    {
+       
+    }
+
+    public void OnCompleted()
+    {
+       
+    }
+
+    #endregion
+    
 }
