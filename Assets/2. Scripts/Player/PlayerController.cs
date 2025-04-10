@@ -17,7 +17,7 @@ public class PlayerController : MonoBehaviour, IObserver<GameObject>
     [SerializeField] private float maxGroundCheckDistance = 10f;
 
     [Header("Attach Points")]
-    [SerializeField] private Transform leftHandTrasnform;
+    [SerializeField] private Transform leftHandTransform;
     [SerializeField] private Transform headTransform;
     
     //----
@@ -48,6 +48,7 @@ public class PlayerController : MonoBehaviour, IObserver<GameObject>
     private const float _gravity = -9.81f;
     private Vector3 _velocity = Vector3.zero;
     private int _currentHealth = 0;
+    private WeaponController _weaponController;
 
     private void Awake()
     {
@@ -78,6 +79,13 @@ public class PlayerController : MonoBehaviour, IObserver<GameObject>
         
         //체력초기화
         _currentHealth = maxHealth;
+        
+        //무기할당
+        var staffObject = Resources.Load<GameObject>("Player/Weapon/Staff");
+        var staff = Instantiate(staffObject, leftHandTransform).GetComponent<WeaponController>();
+        staff.Subscribe(this);
+
+        _weaponController = staff;
     }
 
     private void Update()
@@ -188,7 +196,13 @@ public class PlayerController : MonoBehaviour, IObserver<GameObject>
 
     public void OnNext(GameObject value)
     {
-        
+        //공격 성공 처리
+        var enemyController = value.GetComponent<EnemyController>();
+        if (enemyController)
+        {
+            //todo: EnemyController에게 "너 맞았어!"라고 알려주면 된다.-> 때린 방향으로 처리할라구 때린쪽에서 때렸다고 알려주는 것임
+            
+        }
     }
 
     public void OnError(Exception error)
@@ -196,9 +210,10 @@ public class PlayerController : MonoBehaviour, IObserver<GameObject>
        
     }
 
-    public void OnCompleted()
+    public void OnCompleted()//무기가 교체되거나 파괴되는 경우, 옵저버는 등록되었는데 무기는 없어지는 상황이 되면 나 할일 다 했다고 알려줌
     {
-       
+       //무기에 대해 등록 해제 Unsubscribe
+       _weaponController.Unsubscribe(this);
     }
 
     #endregion
