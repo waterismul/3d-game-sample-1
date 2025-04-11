@@ -10,6 +10,7 @@ public class PlayerController : MonoBehaviour, IObserver<GameObject>
 {
     [Header("Player")] [SerializeField] private int maxHealth = 100;
     [SerializeField] private int attackPower = 10;
+    public int AttackPower => attackPower;
 
     [Header("Movement")] [SerializeField] private float jumpSpeed = 2f;
     [SerializeField] private float rotationSpeed = 100f;
@@ -160,14 +161,22 @@ public class PlayerController : MonoBehaviour, IObserver<GameObject>
         _characterController.Move(movePosition);
     }
 
-    public void MeleeAttackStart()
+    public void MeleeAttackStart()//공격 시작
     {
-        
+        if (CurrentState == PlayerState.Attack)
+        {
+            _playerStateAttack.IsAttacking = true;
+            _weaponController.AttackStart();
+        }
     }
 
-    public void MeleeAttackEnd()
+    public void MeleeAttackEnd()//공격 종료
     {
-        
+        if (CurrentState == PlayerState.Attack)
+        {
+            _playerStateAttack.IsAttacking = false;
+            _weaponController.AttackEnd();
+        }
     }
 
     #endregion
@@ -200,8 +209,8 @@ public class PlayerController : MonoBehaviour, IObserver<GameObject>
         var enemyController = value.GetComponent<EnemyController>();
         if (enemyController)
         {
-            //todo: EnemyController에게 "너 맞았어!"라고 알려주면 된다.-> 때린 방향으로 처리할라구 때린쪽에서 때렸다고 알려주는 것임
-            
+            //EnemyController에게 "너 맞았어!"라고 알려주면 된다.-> 때린 방향으로 처리할라구 때린쪽에서 때렸다고 알려주는 것임
+            enemyController.SetHit(this);
         }
     }
 

@@ -107,9 +107,21 @@ public class EnemyController : MonoBehaviour
 
     #region Hit 관련
 
-    private void OnTriggerEnter(Collider other)
+    public void SetHit(PlayerController playerController)
     {
-        Debug.Log("## Enemy OnTriggerEnter");
+        var attackPower = playerController.AttackPower - defensePower;
+        _currentHealth -= attackPower;
+
+        if (_currentHealth <= 0)
+        {
+            //todo: Dead 처리
+            SetState(EnemyState.Dead);
+        }
+        else
+        {
+            _enemyStateHit.SetAttacker(playerController);
+            SetState(EnemyState.Hit);
+        }
     }
 
     #endregion
