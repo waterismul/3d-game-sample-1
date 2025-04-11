@@ -486,7 +486,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   maxHealth: 100
-  attackPower: 10
+  attackPower: 50
   jumpSpeed: 2
   rotationSpeed: 100
   groundLayer:
@@ -2402,7 +2402,7 @@ GameObject:
   - component: {fileID: 1263819713}
   m_Layer: 3
   m_Name: Plane
-  m_TagString: Untagged
+  m_TagString: Ground
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -2489,7 +2489,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 5, y: 5, z: 5}
+  m_LocalScale: {x: 10, y: 10, z: 10}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -2523,7 +2523,7 @@ MonoBehaviour:
   m_OverrideVoxelSize: 0
   m_VoxelSize: 0.16666667
   m_MinRegionArea: 2
-  m_NavMeshData: {fileID: 0}
+  m_NavMeshData: {fileID: 23800000, guid: cdc196b7b3e22ea49a89da9c70139642, type: 2}
   m_BuildHeightMesh: 0
 --- !u!850595691 &1372662904
 LightingSettings:
@@ -5576,6 +5576,47 @@ MonoBehaviour:
   maxAttackDistance: 2
   enemyRenderer: {fileID: 609230263}
   hpBarController: {fileID: 2039619210}
+  ragdollColliders:
+  - {fileID: 1555783799}
+  - {fileID: 2068954763}
+  - {fileID: 248812257}
+  - {fileID: 1786245172}
+  - {fileID: 1939301580}
+  - {fileID: 1585231860}
+  - {fileID: 1761441310}
+  - {fileID: 721069477}
+  - {fileID: 551864565}
+  - {fileID: 1254007071}
+  - {fileID: 104034160}
+  - {fileID: 989341166}
+  - {fileID: 1671726096}
+  ragdollRigdbodies:
+  - {fileID: 1555783798}
+  - {fileID: 2068954762}
+  - {fileID: 248812256}
+  - {fileID: 1786245171}
+  - {fileID: 1939301579}
+  - {fileID: 1585231862}
+  - {fileID: 1761441309}
+  - {fileID: 721069476}
+  - {fileID: 551864567}
+  - {fileID: 1254007070}
+  - {fileID: 104034159}
+  - {fileID: 989341168}
+  - {fileID: 1671726095}
+  ragdollJoints:
+  - {fileID: 1555783800}
+  - {fileID: 2068954764}
+  - {fileID: 248812255}
+  - {fileID: 1786245173}
+  - {fileID: 1939301581}
+  - {fileID: 1585231861}
+  - {fileID: 1761441311}
+  - {fileID: 721069478}
+  - {fileID: 551864566}
+  - {fileID: 1254007072}
+  - {fileID: 104034161}
+  - {fileID: 989341167}
 --- !u!54 &1952370713
 Rigidbody:
   m_ObjectHideFlags: 0
