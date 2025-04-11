@@ -24,6 +24,11 @@ public class EnemyController : MonoBehaviour
     [SerializeField] private float maxPatrolWaitTime = 3f;
     [SerializeField] private float maxAttackDistance = 0.5f;//최소 공격 거리
 
+    public Renderer EnemyRenderer => enemyRenderer;
+    [SerializeField] private Renderer enemyRenderer;//맞으면 빨갛게
+
+    [SerializeField] private HPBarController hpBarController;
+
     public float MaxPatrolWaitTime => maxPatrolWaitTime;
     public float MaxDetectSightAngle => maxDetectSightAngle;
     public float DetectCircleRadius => detectCircleRadius;
@@ -81,6 +86,7 @@ public class EnemyController : MonoBehaviour
         
         //HP 초기화
         _currentHealth = maxHealth;
+        hpBarController.SetHP(_currentHealth/(float)maxHealth);
         
         //상태 초기화
         SetState(EnemyState.Idle);
@@ -111,6 +117,8 @@ public class EnemyController : MonoBehaviour
     {
         var attackPower = playerController.AttackPower - defensePower;
         _currentHealth -= attackPower;
+        
+        hpBarController.SetHP(_currentHealth/(float)maxHealth);
 
         if (_currentHealth <= 0)
         {

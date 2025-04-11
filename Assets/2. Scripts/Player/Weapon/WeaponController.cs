@@ -73,8 +73,8 @@ public class WeaponController : MonoBehaviour, IObservable<GameObject>
 
                     if (!_hitColliders.Contains(hit.collider))
                     {
-                        Time.timeScale = 0f;
-                        StartCoroutine(ResumeTimeScale());
+                        // Time.timeScale = 0f;
+                        // StartCoroutine(ResumeTimeScale());//맞으면 일시적 멈춤 디버깅용
                         
                         _hitColliders.Add(hit.collider);
                         Notify(hit.collider.gameObject);
