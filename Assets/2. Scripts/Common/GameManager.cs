@@ -1,28 +1,143 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.AddressableAssets;
+using UnityEngine.ResourceManagement.AsyncOperations;
 using UnityEngine.SceneManagement;
-
+using UnityEngine.UI;
 public class GameManager : Singleton<GameManager>
 {
 
-    private void Start()
-    {
-        //커서 설정
-        Cursor.visible = false;
-        Cursor.lockState = CursorLockMode.Locked;
-    }
+    [SerializeField] private HPBarController hpBarController;
+    private Canvas _canvas;
+    private AsyncOperationHandle<GameObject> _playerObjectHandle;//플레이어 Addressable로 처리
+    
+    // private void Start()
+    // {
+    //     //커서 설정
+    //     Cursor.visible = false;
+    //     Cursor.lockState = CursorLockMode.Locked;
+    // }
+    //
+    // private void Update()
+    // {
+    //     if(Input.GetKeyDown(KeyCode.Escape))
+    //     {
+    //         Cursor.visible = true;
+    //         Cursor.lockState = CursorLockMode.None;
+    //     }
+    // }
 
-    private void Update()
+    public void SetHP(float hp)//Enemy와 Player가 hpBar를 같이 써서
     {
-        if(Input.GetKeyDown(KeyCode.Escape))
-        {
-            Cursor.visible = true;
-            Cursor.lockState = CursorLockMode.None;
-        }
+        //hpBarController.SetHP(hp);
     }
     protected override void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
+        _canvas = FindCanvas();
+
         
+        if (scene.name == "Main")
+        {
+            if (_playerObjectHandle.IsValid())//이미 생성된 채 씬을 왔다갔다하는거라면
+            {
+                Addressables.ReleaseInstance(_playerObjectHandle);//기존에 플레이어는 이미 만들어진 후라서 없애기
+            }
+            
+        }
+        else
+        {
+            var spawnPoint = GameObject.Find("SpawnPoint");
+            if (!_playerObjectHandle.IsValid())
+            {
+                _playerObjectHandle = Addressables.InstantiateAsync("Ellen",
+                    spawnPoint.transform.position, spawnPoint.transform.rotation);//Addressable로 가져오기
+                _playerObjectHandle.Completed += handle =>
+                {
+                    DontDestroyOnLoad(handle.Result);
+
+                };
+            }
+            else//이미 생성되어있다면
+            {
+                var playerObject = _playerObjectHandle.Result;
+                
+                playerObject.transform.position = spawnPoint.transform.position;
+                playerObject.transform.rotation = spawnPoint.transform.rotation;
+                
+                var playerController = playerObject.GetComponent<PlayerController>();
+                playerController.Init();
+                
+                playerObject.SetActive(true);
+            }
+            
+        }
+    }
+
+    protected override void OnSceneUnloaded(Scene scene)
+    {
+        _canvas = null;
+
+        if (scene.name == "Main")
+        {
+            
+        }
+        else
+        {
+            if (_playerObjectHandle.IsValid())
+            {
+                var playerObject = _playerObjectHandle.Result;
+                playerObject.SetActive(false);
+            }
+        }
+    }
+
+    public void LoadSceneAsync(string sceneName)
+    {
+        StartCoroutine(LoadSceneAsyncCoroutine(sceneName));
+    }
+
+    //비동기로 씬 로드하는 코루틴 함수
+    private IEnumerator LoadSceneAsyncCoroutine(string sceneName)
+    {
+        var loadingPanelPrefab = Resources.Load<GameObject>("Common/LoadingPanel");
+        var loadingPanelObject = Instantiate(loadingPanelPrefab, _canvas.transform);
+        var loadingPanelController = loadingPanelObject.GetComponent<LoadingPanelController>();
+
+        AsyncOperation asyncOperation = SceneManager.LoadSceneAsync(sceneName);
+        asyncOperation.allowSceneActivation = false;//게이지가 다 채운다음에 넘길라고 false처리
+
+        while (asyncOperation.progress < 0.9f)
+        {
+            loadingPanelController.SetLoadingBar(asyncOperation.progress);
+            yield return null;
+        }
+        loadingPanelController.SetLoadingBar(1);
+        asyncOperation.allowSceneActivation = true;//게이지가 꽉찬 상태로
+
+        Destroy(loadingPanelObject);
+    }
+
+    public Canvas FindCanvas()
+    {
+        var canvasObject = GameObject.FindGameObjectWithTag("MainCanvas");
+        Canvas canvas;
+
+        if (canvasObject == null)
+        {
+            canvasObject = new GameObject("MainCanvas");
+            canvasObject.AddComponent<Canvas>();
+            canvasObject.AddComponent<GraphicRaycaster>();
+            canvasObject.AddComponent<CanvasScaler>();
+            canvas = canvasObject.GetComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            canvasObject.tag = "MainCanvas";
+        }
+        else
+        {
+            canvas = canvasObject.GetComponent<Canvas>();
+        }
+        
+        return canvas;
     }
 }

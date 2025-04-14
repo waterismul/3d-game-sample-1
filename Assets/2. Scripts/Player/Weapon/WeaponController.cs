@@ -65,7 +65,7 @@ public class WeaponController : MonoBehaviour, IObservable<GameObject>
                 _ray.direction = direction;
                 
                 var hitCount = Physics.SphereCastNonAlloc(_ray, _triggerZones[i].radius, _hits, 
-                    direction.magnitude, targetLayerMask, QueryTriggerInteraction.Collide);
+                    direction.magnitude, targetLayerMask, QueryTriggerInteraction.UseGlobal);
 
                 for (int j = 0; j < hitCount; j++)
                 {
@@ -88,7 +88,7 @@ public class WeaponController : MonoBehaviour, IObservable<GameObject>
 
     private IEnumerator ResumeTimeScale()
     {
-        yield return new WaitForSecondsRealtime(3f);
+        yield return new WaitForSecondsRealtime(10f);
         Time.timeScale = 1f;
     }
 

@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using JetBrains.Annotations;
@@ -10,12 +11,15 @@ public enum EnemyState{None, Idle, Patrol, Trace, Attack, Hit, Dead}
 
 [RequireComponent(typeof(NavMeshAgent))]
 [RequireComponent(typeof(Animator))]
-public class EnemyController : MonoBehaviour
+public class EnemyController : MonoBehaviour, IObserver<GameObject>
 {
     [Header("Basic Info")] 
     [SerializeField] private int maxHealth = 100;
-    [SerializeField] private int attackPower = 10;
+    [SerializeField] private int attackPower = 50;
+    public int AttackPower => attackPower;
     [SerializeField] private int defensePower = 5;
+    [SerializeField] private WeaponController weapon;
+    public WeaponController Weapon => weapon;
 
     [Header("AI")]
     [SerializeField] private float detectCircleRadius = 10f;
@@ -77,6 +81,9 @@ public class EnemyController : MonoBehaviour
         //Ragdoll 비활성화
         SetRagdollEnabled(false);
         
+        //Weapon Controller 구독
+        weapon.Subscribe(this);
+        
         //상태 객체 생성
         _enemyStateIdle = new EnemyStateIdle();
         _enemyStatePatrol = new EnemyStatePatrol();
@@ -128,11 +135,11 @@ public class EnemyController : MonoBehaviour
         if (other.gameObject.CompareTag("Ground"))
         {
             SetRagdollEnabled(true);
-            StartCoroutine(Dissovle());
+            StartCoroutine(Dissolve());
         }
     }
 
-    IEnumerator Dissovle()
+    IEnumerator Dissolve()
     {
         var propertyBlock = new MaterialPropertyBlock();
         enemyRenderer.GetPropertyBlock(propertyBlock);
@@ -155,10 +162,10 @@ public class EnemyController : MonoBehaviour
             ragdollCollider.enabled = isEnabled;
         }
 
-        foreach (var ragollRigdbody in ragdollRigdbodies)
+        foreach (var ragdollRigdbody in ragdollRigdbodies)
         {
-            ragollRigdbody.detectCollisions = isEnabled;
-            ragollRigdbody.isKinematic = !isEnabled;
+            ragdollRigdbody.detectCollisions = isEnabled;
+            ragdollRigdbody.isKinematic = !isEnabled;
         }
         
         EnemyAnimator.enabled = !isEnabled;//흐음
@@ -188,7 +195,7 @@ public class EnemyController : MonoBehaviour
             
             SetState(EnemyState.Dead);
 
-            Agent.enabled = false;
+            Agent.enabled = false; //Agent를 꺼서 다른 스크립트에서 Agent를 컨트롤하는 코드에 Agent가 있다면,,,조건문을 걸게 함
             
             _rigidbody.isKinematic = false;
             _rigidbody.useGravity = true;
@@ -238,12 +245,12 @@ public class EnemyController : MonoBehaviour
     
     public void AttackBegin()
     {
-        
+        weapon.AttackStart();
     }
 
     public void AttackEnd()
     {
-        
+        weapon.AttackEnd();
     }
 
     #endregion
@@ -290,8 +297,30 @@ public class EnemyController : MonoBehaviour
          }
      }
      
-     
+     #endregion
+
+     #region 공격관련
+
+     public void OnNext(GameObject value)
+     {
+         var playerController = value.GetComponent<PlayerController>();
+         if (playerController)
+         {
+             playerController.SetHit(this, transform.forward);
+         }
+     }
+
+     public void OnError(Exception error)
+     {
+         
+     }
+
+     public void OnCompleted()
+     {
+         weapon.Unsubscribe(this);
+     }
 
      #endregion
+
     
 }

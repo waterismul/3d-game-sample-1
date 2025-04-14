@@ -50,6 +50,7 @@ public class PlayerController : MonoBehaviour, IObserver<GameObject>
     private Vector3 _velocity = Vector3.zero;
     private int _currentHealth = 0;
     private WeaponController _weaponController;
+    private CameraController _cameraController;
 
     private void Awake()
     {
@@ -76,10 +77,12 @@ public class PlayerController : MonoBehaviour, IObserver<GameObject>
             { PlayerState.Hit, _playerStateHit },
             { PlayerState.Dead, _playerStateDead }
         };
-        SetState(PlayerState.Idle);
+
+        
         
         //체력초기화
         _currentHealth = maxHealth;
+        
         
         //무기할당
         var staffObject = Resources.Load<GameObject>("Player/Weapon/Staff");
@@ -87,6 +90,23 @@ public class PlayerController : MonoBehaviour, IObserver<GameObject>
         staff.Subscribe(this);
 
         _weaponController = staff;
+
+        Init();
+    }
+    
+    public void Init()
+    {
+        SetState(PlayerState.Idle);
+        _velocity = Vector3.zero;
+        
+        //플레이어 체력을 UI에 표시
+        GameManager.Instance.SetHP((float)_currentHealth/maxHealth);
+        
+        //카메라 설정
+        _cameraController = Camera.main.GetComponent<CameraController>();
+        _cameraController.SetTarget(headTransform);
+        
+        
     }
 
     private void Update()
@@ -106,6 +126,29 @@ public class PlayerController : MonoBehaviour, IObserver<GameObject>
         CurrentState = state;
         _playerStates[CurrentState].Enter(this);
         
+    }
+
+    public void SetHit(EnemyController enemyController, Vector3 direction)//direction : 공격받는 방향
+    {
+        if (CurrentState != PlayerState.Hit)
+        {
+            var attackPower = enemyController.AttackPower;
+            _currentHealth -= attackPower;
+            
+            //UI에 HP갱신
+            GameManager.Instance.SetHP((float)_currentHealth/maxHealth);
+            
+            if (_currentHealth <= 0)
+            {
+                SetState(PlayerState.Dead);
+            }
+            else
+            {
+                SetState(PlayerState.Hit);
+                Animator.SetFloat("HitPosX", -direction.x);//공격 받는 쪽이라 -
+                Animator.SetFloat("HitPosZ", -direction.z);
+            }
+        }
     }
 
     #region 동작 관련

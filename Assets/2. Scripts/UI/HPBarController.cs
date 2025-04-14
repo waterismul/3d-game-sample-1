@@ -6,11 +6,16 @@ using UnityEngine.UI;
 public class HPBarController : MonoBehaviour
 {
     [SerializeField] private Image _hpGauge;
-
+    [SerializeField] private bool isWorldCanvas;
     private void Update()
     {
-        var cameraTransform = Camera.main.transform;
-        transform.rotation = cameraTransform.rotation;
+        if (isWorldCanvas)
+        {
+            var cameraTransform = Camera.main.transform;//RenderMove가 world space 몬스터 hp
+            transform.rotation = cameraTransform.rotation;
+        }
+        
+        
     }
     public void SetHP(float hp)
     {
